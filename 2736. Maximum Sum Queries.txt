@@ -1,0 +1,112 @@
+// first make the pair of index and queries  array and sort the queries array with respect to x in decreasing order 
+
+// second build corrdinate compression map with distinct(single number) set and then from the queries(y) and nums2 array with respect to y for 
+// segment tree
+
+// build the pair array of first pair of num1 and nums2 with this pair make the pair of there sums and sort them in asending order with respect to x
+
+// build the search for valid x in pair array of num1 and nums2 with repest to queries with respect to x and then build the array of segtree of max // values with respect to y which stores the max value of each coordinate compressed index of y.
+
+// after the end of the second loop search for the queries for the querry y till the end which is the answer of that query
+
+
+#define vi vector<int>
+#define ff first
+#define ss second
+void update(int s,int e,int qs,int qe,int v,int index, vi &seg){
+	if(s > e) return ;
+ 
+	if(s>qe || e < qs) return;
+ 
+	if(s>=qs && e <=qe){
+		seg[index] = max(seg[index],v);
+		return ;
+	}
+ 
+	int mid = (s+e)/2;
+ 
+	update(s,mid,qs,qe,v,2*index,seg);
+	update(mid+1,e,qs,qe,v,2*index+1,seg);
+ 
+ 
+	seg[index] = max(seg[2*index],seg[2*index+1]);
+ 
+ 
+}
+ 
+int query(int s,int e,int qs,int qe,int index, vi &seg){
+ 
+	if(s > e) return 0 ;
+ 
+	if(s>qe || e < qs) return 0;
+ 
+	if(s>=qs && e <=qe){
+		return seg[index];
+	}
+ 
+	int mid = (s+e)/2;
+ 
+	int left = query(s,mid,qs,qe,2*index,seg);
+	int right = query(mid+1,e,qs,qe,2*index+1,seg);
+ 
+	return max(left,right);
+ 
+ 
+ 
+}
+
+bool comp(pair<pair<int,int>,int> a,pair<pair<int,int>,int> b){
+    return a.ff.ff > b.ff.ff; // A_X > B_X
+}
+class Solution {
+public:
+    vector<int> maximumSumQueries(vector<int>& nums1, vector<int>& nums2, vector<vector<int>>& queries) {
+        int n = nums1.size();
+        vector<pair<pair<int,int>,int>> q;
+        for(int i =0; i < queries.size(); i+=1){
+            auto node = queries[i];
+            q.push_back({{node[0],node[1]},i});
+        }
+        sort(q.begin(),q.end(),comp);
+        // coordinate compresion start
+        set<int> uy;
+        for(auto node : nums2){
+            uy.insert(node);
+        }
+        for(auto node : queries){
+            uy.insert(node[1]);
+        }
+        
+        map<int,int> cord;
+        int tIdx = 0;
+        for(auto node : uy) cord[node] = tIdx++;
+        // coordinate compression end
+        vector<int> seg(4*tIdx+1,0);
+        vector<pair<pair<int,int>,int>> arr;
+        for(int i =0;i <n; i+=1){
+            arr.push_back({{nums1[i],nums2[i]},nums1[i]+nums2[i]});
+        }
+        sort(arr.begin(),arr.end());    
+        
+        vector<int> answer(queries.size());
+        // for(auto node : arr) cout << node.ff.ff << " " <<node.ff.ss << " " << node.ss << endl;
+        // we will sort the queries;
+        int idx = n-1;
+        for(auto node : q){
+            int X = node.ff.ff;
+            int Y = node.ff.ss;
+            int qIdx = node.ss;
+            // cout << "AT " << X << " " << Y << " " <<  qIdx << endl;
+            while(idx>=0 && arr[idx].ff.ff >= X){
+                // cout << "adding " << idx << " " << cord[arr[idx].ff.ss] << " " << arr[idx].ss << endl;
+                update(0,tIdx-1,cord[arr[idx].ff.ss],cord[arr[idx].ff.ss],arr[idx].ss,1,seg);
+                idx--;
+            }
+            
+            int ret = query(0,tIdx-1,cord[Y],tIdx-1,1,seg);
+            
+            answer[qIdx] = ret==0?-1:ret;
+        }
+        return answer;
+    }
+};
